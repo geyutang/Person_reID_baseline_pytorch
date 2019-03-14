@@ -9,11 +9,11 @@ result={}
 epochs = 60
 # lr = 0.02
 optimizer='sgd'
-backbone='dense_arc'
+backbone='resnet_cosin'
 ids = '0'
 balanced_sample=True
 use_arc = True
-use_dense = True
+use_dense = False 
 # arc_margin = [0.4]
 # test_list = ['9', '19', '29', '39', '49', '59', 'last']
 

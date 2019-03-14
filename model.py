@@ -60,8 +60,8 @@ class ClassBlock(nn.Module):
             x = self.classifier(x)
             return x
 class AddBlock(nn.Module):
-    def __init__(self, input_dim, droprate, 
-        relu=False, bnorm=True, embedding=512, linear=True, return_f = False):
+    def __init__(self, input_dim, embedding, droprate, 
+        relu=False, bnorm=True, linear=True, return_f = False):
         super(AddBlock, self).__init__()
         self.return_f = return_f
         add_block = []

@@ -22,7 +22,8 @@ import yaml
 from shutil import copyfile
 from metrics import *
 import OneCycle as OneCycle
-def main(ids, name, balanced_sample=False, use_dense=False, arc=False, embedding=512, arc_scale=30, arc_margin=0.01, lr=0.05, epochs=60 ):
+from center_loss import CenterLoss
+def main(ids, name, balanced_sample=False, use_dense=False, arc=False, embedding=512, arc_scale=30, arc_margin=0.01, lr=0.05, epochs=60, center_loss=False):
     version =  torch.__version__
     #fp16
     # try:
@@ -35,7 +36,7 @@ def main(ids, name, balanced_sample=False, use_dense=False, arc=False, embedding
     parser = argparse.ArgumentParser(description='Training')
     parser.add_argument('--gpu_ids',default='1', type=str,help='gpu_ids: e.g. 0  0,1,2  0,2')
     parser.add_argument('--name',default='ft_ResNet50', type=str, help='output model name')
-    parser.add_argument('--data_dir',default='/home/dataset/Market-1501/pytorch',type=str, help='training dir path')
+    parser.add_argument('--data_dir',default='/home/tanggeyu/Dataset/Market-1501/pytorch',type=str, help='training dir path')
     parser.add_argument('--train_all', action='store_true', help='use all training data' )
     parser.add_argument('--color_jitter', action='store_true', help='use color jitter in training' )
     parser.add_argument('--batchsize', default=32, type=int, help='batchsize')
@@ -387,14 +388,23 @@ def main(ids, name, balanced_sample=False, use_dense=False, arc=False, embedding
     # elif arc:
     #     model = resnet_arc(embedding, opt.droprate)
     else:
-        model = ft_net(len(class_names), opt.droprate)
+       #  model = ft_net(len(class_names), opt.droprate)
+        model = resnet_arc(embedding, opt.droprate)
         
 
     
     if opt.PCB:
         model = PCB(len(class_names))
+ #################################################################################
+ # define the metric_fc
+
+    #metric_fc = ArcMarginProduct(embedding, len(class_names), s=arc_scale, m=arc_margin)
+    metric_fc = AddMarginProduct(embedding, len(class_names), s=30, m=0.4)
+    #  metric_fc = SphereProduct(embedding, len(class_names), m=4)
     
-    metric_fc = ArcMarginProduct(embedding, len(class_names), s=arc_scale, m=arc_margin)
+################################################
+# use center loss
+    center_loss=
     # print(model)
     
     # if not opt.PCB:
