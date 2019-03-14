@@ -18,13 +18,24 @@ with open('result.yml', 'r') as stream:
 # metric scale!!!!!!!!
 # for arc  scale=30, margin=0.01 default.
 # cosine  scale=30, margin =0.4 default
-# sphere scale =4  no margin
+# sphere margin =4  no scale
 # balanced sampled
 
 epochs = 60
 # lr = 0.02
 optimizer='SGD'
-loss = 'center'
+
+loss = 'sphere'
+margin = 4
+scale = 1
+#loss = 'cosface'
+#scale = 30
+#margin = 0.4
+
+#loss = 'arcface'
+#scale = 30
+#margin = 0.01
+
 backbone='resnet'
 ids = '0'
 dataset='market'
@@ -61,7 +72,8 @@ for i,  wd in enumerate(weight_decays):
     name = dataset+'_'+backbone+'_'+optimizer+loss+'_lr'+str(lr)+'_weight_decay'+str(wd)+'_epochs'+str(epochs)
     train.main(ids = ids, name=name, balanced_sample=balanced_sample,
         backbone=backbone, loss=loss, weight_decay=wd,
-        dataset=dataset, lr=lr, epochs=epochs)
+        dataset=dataset, lr=lr, epochs=epochs,
+        margin=margin, scale=scale)
     # #train.main(id=ids, name='resnet_adam')
     # 
     test.main(ids=ids, name=name,  which_epoch='last', backbond=backbone)
