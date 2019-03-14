@@ -26,7 +26,7 @@ def weights_init_classifier(m):
 # Defines the new fc layer and classification layer
 # |--Linear--|--bn--|--relu--|--Linear--|
 class ClassBlock(nn.Module):
-    def __init__(self, input_dim, class_num, droprate, relu=False, bnorm=True, num_bottleneck=512, linear=True, return_f = False):
+    def __init__(self, input_dim, class_num, droprate, relu=False, bnorm=True, num_bottleneck=512, linear=True, return_f = True):
         super(ClassBlock, self).__init__()
         self.return_f = return_f
         add_block = []
@@ -56,7 +56,7 @@ class ClassBlock(nn.Module):
             f = x
             x = self.classifier(x)
             return x,f
-        else:
+        else: 
             x = self.classifier(x)
             return x
 class AddBlock(nn.Module):
@@ -124,10 +124,10 @@ class ft_net(nn.Module):
         x = self.classifier(x)
         return x
 
-class resnet_arc(nn.Module):
+class resnet_metric(nn.Module):
 
-    def __init__(self, class_num, droprate=0.5, stride=1):
-        super(resnet_arc, self).__init__()
+    def __init__(self, embedding, droprate=0.5, stride=1):
+        super(resnet_metric, self).__init__()
         model_ft = models.resnet50(pretrained=True)
         # avg pooling to global pooling
         if stride == 1:
@@ -135,7 +135,7 @@ class resnet_arc(nn.Module):
             model_ft.layer4[0].conv2.stride = (1,1)
         model_ft.avgpool = nn.AdaptiveAvgPool2d((1,1))
         self.model = model_ft
-        self.addblock = AddBlock(2048, class_num, droprate)
+        self.addblock = AddBlock(2048, embedding, droprate)
 
     def forward(self, x):
         x = self.model.conv1(x)
@@ -169,7 +169,7 @@ class ft_net_dense(nn.Module):
         x = self.classifier(x)
         return x
 
-class dense_arc(nn.Module):
+class dense_metric(nn.Module):
 
     def __init__(self, embedding, droprate=0.5):
         super().__init__()
@@ -181,7 +181,7 @@ class dense_arc(nn.Module):
         # self.classifier = ClassBlock(1024, class_num, droprate)
         ##########################################################
         # add fully connect network
-        self.addblock = AddBlock(1024, droprate, embedding=embedding)
+        self.addblock = AddBlock(1024, embedding, droprate)
     def forward(self, x):
         x = self.model.features(x)
         x = x.view(x.size(0), x.size(1))
@@ -218,6 +218,37 @@ class ft_net_middle(nn.Module):
         x = torch.cat((x0,x1),1)
         x = x.view(x.size(0), x.size(1))
         x = self.classifier(x)
+        return x
+
+
+class resnetmiddle_metric(nn.Module):
+
+    def __init__(self, embedding, droprate=0.5):
+        super(resnetmiddle_metric, self).__init__()
+        model_ft = models.resnet50(pretrained=True)
+        # avg pooling to global pooling
+        model_ft.avgpool = nn.AdaptiveAvgPool2d((1,1))
+        self.model = model_ft
+        self.addblock = AddBlock(2048+1024, embedding, droprate)
+        # self.classifier = ClassBlock(2048+1024, class_num, droprate)
+
+    def forward(self, x):
+        x = self.model.conv1(x)
+        x = self.model.bn1(x)
+        x = self.model.relu(x)
+        x = self.model.maxpool(x)
+        x = self.model.layer1(x)
+        x = self.model.layer2(x)
+        x = self.model.layer3(x)
+        # x0  n*1024*1*1
+        x0 = self.model.avgpool(x)
+        x = self.model.layer4(x)
+        # x1  n*2048*1*1
+        x1 = self.model.avgpool(x)
+        x = torch.cat((x0,x1),1)
+        x = x.view(x.size(0), x.size(1))
+        x = self.addblock(x)
+        # x = self.classifier(x)
         return x
 
 # Part Model proposed in Yifan Sun etal. (2018)

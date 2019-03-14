@@ -251,9 +251,11 @@ def main(ids, name, which_epoch,use_dense, backbond=True, arc=False):
         # model.model.fc = nn.Sequential()
         model.classifier = nn.Sequential()
         
-    
+    #####################################################
     # Change to test mode
+    # change the dropout and bn layer property
     model = model.eval()
+
     if use_gpu:
         model = model.cuda()
     
