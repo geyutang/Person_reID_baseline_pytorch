@@ -52,10 +52,12 @@ balanced_sample=True
     
 ##############################################################]
 # iteration weight_decay
-weight_decays = [5e-1, 1e-1, 5e-2, 1e-2, 5e-3, 1e-3, 5e-4, 1e-4, 5e-5, 1e-5, 5e-6, 1e-6]
+# weight_decays = [5e-1, 1e-1, 5e-2, 1e-2, 5e-3, 1e-3, 5e-4, 1e-4, 5e-5, 1e-5, 5e-6, 1e-6]
 lr = 5e-2
+weight_decays=[5e-4]
+epochs = 1
 for i,  wd in enumerate(weight_decays):
-    name = dataset+'_'+backbone+'_'+loss+'_lr'+str(lr)+'_weight_decay'+str(wd)+'_epochs'+str(epochs)
+    name = dataset+'_'+backbone+'_'+optimizer+loss+'_lr'+str(lr)+'_weight_decay'+str(wd)+'_epochs'+str(epochs)
     train.main(ids = ids, name=name, balanced_sample=balanced_sample,
         backbone=backbone, loss=loss,
         dataset=dataset, lr=lr, epochs=epochs)
