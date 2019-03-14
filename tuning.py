@@ -8,8 +8,8 @@ with open('result.yml', 'r') as stream:
 result={}
 epochs = 60
 # lr = 0.02
-optimizer='sgd'
-backbone='resnet_cosin'
+optimizer = 'sgd'
+backbone = 
 ids = '0'
 balanced_sample=True
 use_arc = True
