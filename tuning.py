@@ -24,8 +24,10 @@ with open('result.yml', 'r') as stream:
 epochs = 60
 # lr = 0.02
 optimizer='SGD'
+loss = 'softmax'
 backbone='resnet'
 ids = '0'
+dataset='market'
 balanced_sample=True
 
 # arc_margin = [0.4]
@@ -53,12 +55,13 @@ balanced_sample=True
 weight_decays = [5e-1, 1e-1, 5e-2, 1e-2, 5e-3, 1e-3, 5e-4, 1e-4, 5e-5, 1e-5, 5e-6, 1e-6]
 lr = 5e-2
 for i,  wd in enumerate(weight_decays):
-    name = backbone+optimizer+'_lr'+str(lr)+'_weight_decay'+str(wd)+'_epochs'+str(epochs)
+    name = dataset+'_'+backbone+'_'+loss+'_lr'+str(lr)+'_weight_decay'+str(wd)+'_epochs'+str(epochs)
     train.main(ids = ids, name=name, balanced_sample=balanced_sample,
-        lr=lr, epochs=epochs)
+        backbone=backbone, loss=loss,
+        dataset=dataset, lr=lr, epochs=epochs)
     # #train.main(id=ids, name='resnet_adam')
     # 
-    test.main(ids=ids, name=name, use_dense=, which_epoch='last')
+    test.main(ids=ids, name=name,  which_epoch='last', backbond=backbone)
     # # evaluate_gpu.main(name=name)
     # f_name = name + test_epoch
     # result[f_name] = evaluate_gpu.main(name=name)
