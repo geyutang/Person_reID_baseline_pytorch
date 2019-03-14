@@ -26,7 +26,7 @@ from model import ft_net, ft_net_dense, PCB, PCB_test, resnet_arc, dense_arc
 # ######################################################################
 # Options
 # --------
-def main(ids, name, which_epoch,use_dense, backbond=True, arc=False):
+def main(ids, name, which_epoch, backbond='resnet'):
     parser = argparse.ArgumentParser(description='Training')
     parser.add_argument('--gpu_ids',default='0', type=str,help='gpu_ids: e.g. 0  0,1,2  0,2')
     parser.add_argument('--which_epoch',default='last', type=str, help='0,1,2,3...or last')
@@ -208,19 +208,12 @@ def main(ids, name, which_epoch,use_dense, backbond=True, arc=False):
     ######################################################################
     # Load Collected data Trained model
     print('-------test-----------')
-    if opt.use_dense:
-        # model_structure = ft_net_dense(751)
-        #####################################3
-        # dense arc
-        model_structure = dense_arc(512)
-    elif arc:
-        
-        ###################################
-        # change load model
-        model_structure = resnet_arc(512)
-    else:
+    if backbond=='resnet':
         model_structure = ft_net(751)
-    
+    if backbond=='dense':
+        model_structure = ft_net_dense(751)
+    if backbond=='resnetmid':
+        model_structure = ft_net_middle(751)
     if opt.PCB:
         model_structure = PCB(751)
     
@@ -236,19 +229,9 @@ def main(ids, name, which_epoch,use_dense, backbond=True, arc=False):
     elif opt.fp16:
         model[1].model.fc = nn.Sequential()
         model[1].classifier = nn.Sequential()
-    elif backbond:
-        model.model.fc = nn.Sequential()
-        model.addblock = nn.Sequential()
-        model.classifier = nn.Sequential()
-    elif arc:
-        model.addblock = nn.Sequential()
-        model.model.fc = nn.Sequential()
-        model.classifier = nn.Sequential()
-        # 
-        #############################################\
-        #whether extract feature
+
     else:
-        # model.model.fc = nn.Sequential()
+        model.model.fc = nn.Sequential()
         model.classifier = nn.Sequential()
         
     #####################################################

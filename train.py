@@ -26,12 +26,14 @@ import OneCycle as OneCycle
 from center_loss import CenterLoss
 def main(ids, name, balanced_sample=False, backbone='resnet', loss='softmax',
          dataset='market',embedding=512, scale=30, margin=0.01, 
-         weight_cent=1, lr=0.05, epochs=60):
+         weight_cent=1, lr=0.05, weight_lr=0.1, epochs=60, optimizer='SGD', 
+         scheduler_type='step'):
     version =  torch.__version__
     # args :
     # backbone=('resnet', 'resnetmid', 'dense')
     # loss = ('softmax', 'arcface', 'cosface', 'sphere', 'center')
     # dataset = ('market', 'duke', 'cuhk03')
+    # optimizer = ('sgd', 'adam')
     #fp16
     # try:
     #     from apex.fp16_utils import *
@@ -236,7 +238,8 @@ def main(ids, name, balanced_sample=False, backbone='resnet', loss='softmax',
                     #####################################
                     # sheduler
                     #####################################
-                    scheduler.step()
+                    if scheduler_type!='one_cycle':
+                        scheduler.step()
                     model.train(True)  # Set model to training mode
                 else:
                     model.train(False)  # Set model to evaluate mode
@@ -262,7 +265,7 @@ def main(ids, name, balanced_sample=False, backbone='resnet', loss='softmax',
                         inputs = inputs.half()
                     ###############################################
                     # one cycle policy
-                    if use_cycle:    
+                    if scheduler_type=='one_cycle':    
                         lr, mom = onecycle.calc()
                         update_lr(optimizer, lr)
                         update_mom(optimizer, mom)
@@ -470,29 +473,50 @@ def main(ids, name, balanced_sample=False, backbone='resnet', loss='softmax',
     if loss=='softmax':
         ignored_params = list(map(id, model.model.fc.parameters() ))+list(map(id, model.classifier.parameters() ))
         base_params = filter(lambda p: id(p) not in ignored_params, model.parameters())
-        optimizer_ft = optim.SGD([
-                 {'params': base_params, 'lr': 0.1*opt.lr},
-                 {'params': model.model.fc.parameters(), 'lr': opt.lr},
-                 {'params': model.classifier.parameters(), 'lr': opt.lr}
-                 # {'params': model.addblock.parameters(), 'lr': opt.lr},
-                 # {'params': metric_fc.parameters(), 'lr': opt.lr}
-             ], weight_decay=5e-4, momentum=0.9, nesterov=True)
+        if optimizer=='SGD':
+            optimizer_ft = optim.SGD([
+                     {'params': base_params, 'lr': weight_lr*opt.lr},
+                     {'params': model.model.fc.parameters(), 'lr': opt.lr},
+                     {'params': model.classifier.parameters(), 'lr': opt.lr}
+                     # {'params': model.addblock.parameters(), 'lr': opt.lr},
+                     # {'params': metric_fc.parameters(), 'lr': opt.lr}
+                 ], weight_decay=5e-4, momentum=0.9, nesterov=True)
+        if optimizer=='ADAM':
+            optimizer_ft = optim.Adam([
+                     {'params': base_params, 'lr': weight_lr*opt.lr},
+                     {'params': model.model.fc.parameters(), 'lr': opt.lr},
+                     {'params': model.classifier.parameters(), 'lr': opt.lr}
+                     # {'params': model.addblock.parameters(), 'lr': opt.lr},
+                     # {'params': metric_fc.parameters(), 'lr': opt.lr}
+                 ],betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
     
     if loss=='arcface' or loss=='arcface'or loss=='arcface':
         ignored_params = list(map(id, model.model.fc.parameters() ))+list(map(id, model.addblock.parameters() ))
         base_params = filter(lambda p: id(p) not in ignored_params, model.parameters())
-        optimizer_ft = optim.SGD([
-                 {'params': base_params, 'lr': 0.1*opt.lr},
-                 {'params': model.model.fc.parameters(), 'lr': opt.lr},
-                 # {'params': model.classifier.parameters(), 'lr': opt.lr}
-                 {'params': model.addblock.parameters(), 'lr': opt.lr},
-                 {'params': metric_fc.parameters(), 'lr': opt.lr}
-             ], weight_decay=5e-4, momentum=0.9, nesterov=True)
+        if optimizer=='SGD':
+            optimizer_ft = optim.SGD([
+                     {'params': base_params, 'lr': weight_lr*opt.lr},
+                     {'params': model.model.fc.parameters(), 'lr': opt.lr},
+                     # {'params': model.classifier.parameters(), 'lr': opt.lr}
+                     {'params': model.addblock.parameters(), 'lr': opt.lr},
+                     {'params': metric_fc.parameters(), 'lr': opt.lr}
+                 ], weight_decay=5e-4, momentum=0.9, nesterov=True)
+        if optimizer=='ADAM':
+            optimizer_ft = optim.Adam([
+                     {'params': base_params, 'lr': weight_lr*opt.lr},
+                     {'params': model.model.fc.parameters(), 'lr': opt.lr},
+                     # {'params': model.classifier.parameters(), 'lr': opt.lr}
+                     {'params': model.addblock.parameters(), 'lr': opt.lr},
+                     {'params': metric_fc.parameters(), 'lr': opt.lr}
+                 ],betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
 
     if loss == 'center':
-        optimizer_model = torch.optim.SGD(model.parameters(), lr=0.1*lr, weight_decay=5e-04, momentum=0.9)
-        optimizer_centloss = torch.optim.SGD(criterion_cent.parameters(), lr=lr)
-
+        if optimizer=='SGD':
+            optimizer_model = torch.optim.SGD(model.parameters(), lr=weight_lr*lr, weight_decay=5e-04, momentum=0.9, nesterov=True)
+            optimizer_centloss = torch.optim.SGD(criterion_cent.parameters(), lr=lr)
+        if optimizer=='ADAM':
+            optimizer_model = torch.optim.Adam(model.parameters(), lr=weight_lr*lr, betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
+            optimizer_centloss = torch.optim.Adam(criterion_cent.parameters(), lr=lr)
         
 
     if opt.PCB :
@@ -521,14 +545,15 @@ def main(ids, name, balanced_sample=False, backbone='resnet', loss='softmax',
              ], weight_decay=5e-3, momentum=0.9, nesterov=True)
     
     # Decay LR by a factor of 0.1 every 40 epochs
-    exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=40, gamma=0.1)
-    ####################################################################3
-    # change scheduler
-    # scheduler = torch.optim.CyclicLR(optimizer_ft)
-    # onecycle = OneCycle.OneCycle((dataset_sizes['train'] * num_epochs /opt.batchsize),
-        # max_lr=5e-3, prcnt=(num_epochs - 42) * 100/num_epochs,
-         # momentum_vals=(0.95, 0.8))
-    # exp_lr_scheduler = onecycle
+    if scheduler_type=='step':
+        exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=40, gamma=0.1)
+    if scheduler_type=='one_cycle':
+        ####################################################################3
+        # change scheduler
+        onecycle = OneCycle.OneCycle((dataset_sizes['train'] * num_epochs /opt.batchsize),
+            max_lr=5e-3, prcnt=(num_epochs - 42) * 100/num_epochs,
+             momentum_vals=(0.95, 0.8))
+        exp_lr_scheduler = onecycle
     ######################################################################
     # Train and evaluate
     # ^^^^^^^^^^^^^^^^^^
