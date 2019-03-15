@@ -26,8 +26,8 @@ import OneCycle as OneCycle
 from center_loss import CenterLoss
 def main(ids, name, balanced_sample=False, backbone='resnet', loss='softmax',
          dataset='market',embedding=512, scale=30, margin=0.01, 
-         weight_cent=1, lr=0.05, weight_lr=0.1, epochs=60, optimizer='SGD', 
-         scheduler_type='step'):
+         weight_cent=1, lr=0.05, weight_lr=0.1, epochs=60, optimizer='SGD',
+         weight_decay= 5e-4, scheduler_type='step'):
     version =  torch.__version__
     # args :
     # backbone=('resnet', 'resnetmid', 'dense')
