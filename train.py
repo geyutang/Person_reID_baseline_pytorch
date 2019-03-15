@@ -217,7 +217,7 @@ def main(ids, name, balanced_sample=False, backbone='resnet', loss='softmax',
     y_err['train'] = []
     y_err['val'] = []
     
-    def train_model(model, criterion, optimizer, optimizer_centloss, scheduler, num_epochs=25):
+    def train_model(model, metric_fc, criterion, optimizer, optimizer_centloss, scheduler, num_epochs=25):
         since = time.time()
     
         #best_model_wts = model.state_dict()
@@ -438,6 +438,7 @@ def main(ids, name, balanced_sample=False, backbone='resnet', loss='softmax',
  #################################################################################
  # define the metric_fc
  # loss = ('softmax', 'arcface', 'cosface', 'sphere', 'center')
+    metric_fc = None
     if loss == 'arcface':
         metric_fc = ArcMarginProduct(embedding, len(class_names), s=scale, m=margin)
     if loss == 'cosface':
@@ -580,8 +581,8 @@ def main(ids, name, balanced_sample=False, backbone='resnet', loss='softmax',
     
     
     
-    model = train_model(model, criterion, optimizer_ft, exp_lr_scheduler,
-                           num_epochs)
+    model = train_model(model, metric_fc, criterion, optimizer_ft, exp_lr_scheduler,
+                           num_epochs, optimizer_centloss)
 
 if __name__ == '__main__':
     main()
