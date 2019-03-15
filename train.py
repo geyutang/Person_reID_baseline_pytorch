@@ -25,10 +25,8 @@ from metrics import *
 import OneCycle as OneCycle
 from center_loss import CenterLoss
 def main(ids, name, balanced_sample=False, backbone='resnet', loss='softmax',
-         dataset='market',embedding=512, 
-         scale=30, margin=0.01, 
-         weight_cent=1, lr=0.05, weight_lr=0.1,weight_decay=5e-4,
-         epochs=60, optimizer='SGD', 
+         dataset='market',embedding=512, scale=30, margin=0.01, 
+         weight_cent=1, lr=0.05, weight_lr=0.1, epochs=60, optimizer='SGD', 
          scheduler_type='step'):
     version =  torch.__version__
     # args :
@@ -219,7 +217,7 @@ def main(ids, name, balanced_sample=False, backbone='resnet', loss='softmax',
     y_err['train'] = []
     y_err['val'] = []
     
-    def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
+    def train_model(model, criterion, optimizer, optimizer_centloss, scheduler, num_epochs=25):
         since = time.time()
     
         #best_model_wts = model.state_dict()
@@ -276,7 +274,7 @@ def main(ids, name, balanced_sample=False, backbone='resnet', loss='softmax',
                     if loss != 'center':
                         optimizer.zero_grad()
                     else:
-                        optimizer_model.zero_grad()
+                        optimizer.zero_grad()
                         optimizer_centloss.zero_grad()
     
                     # forward
@@ -292,7 +290,7 @@ def main(ids, name, balanced_sample=False, backbone='resnet', loss='softmax',
                         if loss == 'softmax':
                             train_loss = criterion(outputs, labels)
                         if loss=='arcface' or loss=='cosface' or loss=='sphere':
-                            norm_output = metric_fc(features, labels)
+                            norm_output = metric_fc(features)
                             train_loss = criterion(norm_output, labels)
                         if loss=='center':
                             loss_xent = criterion_xent(outputs, labels)
@@ -324,7 +322,7 @@ def main(ids, name, balanced_sample=False, backbone='resnet', loss='softmax',
                         if loss != 'center':
                             optimizer.step()
                         else:
-                            optimizer_model.step()
+                            optimizer.step()
                             # by doing so, weight_cent would not impact on the learning of centers
                             for param in criterion_cent.parameters():
                                 param.grad.data *= (1. / weight_cent)
@@ -471,7 +469,7 @@ def main(ids, name, balanced_sample=False, backbone='resnet', loss='softmax',
 
     #################################################################
     # defination of the parameter update
-
+    optimizer_centloss = None
     if loss=='softmax':
         ignored_params = list(map(id, model.model.fc.parameters() ))+list(map(id, model.classifier.parameters() ))
         base_params = filter(lambda p: id(p) not in ignored_params, model.parameters())
@@ -482,7 +480,7 @@ def main(ids, name, balanced_sample=False, backbone='resnet', loss='softmax',
                      {'params': model.classifier.parameters(), 'lr': opt.lr}
                      # {'params': model.addblock.parameters(), 'lr': opt.lr},
                      # {'params': metric_fc.parameters(), 'lr': opt.lr}
-                 ], weight_decay=weight_decay, momentum=0.9, nesterov=True)
+                 ], weight_decay=5e-4, momentum=0.9, nesterov=True)
         if optimizer=='ADAM':
             optimizer_ft = optim.Adam([
                      {'params': base_params, 'lr': weight_lr*opt.lr},
@@ -490,19 +488,19 @@ def main(ids, name, balanced_sample=False, backbone='resnet', loss='softmax',
                      {'params': model.classifier.parameters(), 'lr': opt.lr}
                      # {'params': model.addblock.parameters(), 'lr': opt.lr},
                      # {'params': metric_fc.parameters(), 'lr': opt.lr}
-                 ],betas=(0.9, 0.999), eps=1e-08, weight_decay=weight_decay, amsgrad=False)
+                 ],betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
     
-    if loss=='arcface' or loss=='sphere'or loss=='cosface':
-        ignored_params = list(map(id, model.model.fc.parameters() ))+list(map(id, model.classifier.parameters() ))
+    if loss=='arcface' or loss=='arcface'or loss=='arcface':
+        ignored_params = list(map(id, model.model.fc.parameters() ))+list(map(id, model.addblock.parameters() ))
         base_params = filter(lambda p: id(p) not in ignored_params, model.parameters())
         if optimizer=='SGD':
             optimizer_ft = optim.SGD([
                      {'params': base_params, 'lr': weight_lr*opt.lr},
                      {'params': model.model.fc.parameters(), 'lr': opt.lr},
-                     {'params': model.classifier.parameters(), 'lr': opt.lr},
-                    # {'params': model.addblock.parameters(), 'lr': opt.lr},
+                     # {'params': model.classifier.parameters(), 'lr': opt.lr}
+                     {'params': model.addblock.parameters(), 'lr': opt.lr},
                      {'params': metric_fc.parameters(), 'lr': opt.lr}
-                 ], weight_decay=weight_decay, momentum=0.9, nesterov=True)
+                 ], weight_decay=5e-4, momentum=0.9, nesterov=True)
         if optimizer=='ADAM':
             optimizer_ft = optim.Adam([
                      {'params': base_params, 'lr': weight_lr*opt.lr},
@@ -510,14 +508,14 @@ def main(ids, name, balanced_sample=False, backbone='resnet', loss='softmax',
                      # {'params': model.classifier.parameters(), 'lr': opt.lr}
                      {'params': model.addblock.parameters(), 'lr': opt.lr},
                      {'params': metric_fc.parameters(), 'lr': opt.lr}
-                 ],betas=(0.9, 0.999), eps=1e-08, weight_decay=weight_decay, amsgrad=False)
+                 ],betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
 
     if loss == 'center':
         if optimizer=='SGD':
-            optimizer_model = torch.optim.SGD(model.parameters(), lr=weight_lr*lr, weight_decay=weight_decay, momentum=0.9, nesterov=True)
+            optimizer_ft = torch.optim.SGD(model.parameters(), lr=weight_lr*lr, weight_decay=5e-04, momentum=0.9, nesterov=True)
             optimizer_centloss = torch.optim.SGD(criterion_cent.parameters(), lr=lr)
         if optimizer=='ADAM':
-            optimizer_model = torch.optim.Adam(model.parameters(), lr=weight_lr*lr, betas=(0.9, 0.999), eps=1e-08, weight_decay=weight_decay, amsgrad=False)
+            optimizer_ft = torch.optim.Adam(model.parameters(), lr=weight_lr*lr, betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
             optimizer_centloss = torch.optim.Adam(criterion_cent.parameters(), lr=lr)
         
 
@@ -544,14 +542,11 @@ def main(ids, name, balanced_sample=False, backbone='resnet', loss='softmax',
                  {'params': model.classifier5.parameters(), 'lr': opt.lr},
                  #{'params': model.classifier6.parameters(), 'lr': 0.01},
                  #{'params': model.classifier7.parameters(), 'lr': 0.01}
-             ], weight_decay=weight_decay, momentum=0.9, nesterov=True)
+             ], weight_decay=5e-3, momentum=0.9, nesterov=True)
     
     # Decay LR by a factor of 0.1 every 40 epochs
     if scheduler_type=='step':
         exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=40, gamma=0.1)
-        if loss=='center':
-            exp_lr_scheduler = lr_scheduler.StepLR(optimizer_model, step_size=40, gamma=0.1)
-            cen 
     if scheduler_type=='one_cycle':
         ####################################################################3
         # change scheduler
@@ -578,8 +573,7 @@ def main(ids, name, balanced_sample=False, backbone='resnet', loss='softmax',
     
     # model to gpu
     model = model.cuda()
-    if loss=='arcface' or loss=='sphere' or loss=='cosface':
-        metric_fc = metric_fc.cuda()
+    metric_fc = metric_fc.cuda()
     if fp16:
         model = network_to_half(model)
         optimizer_ft = FP16_Optimizer(optimizer_ft, static_loss_scale = 128.0)
