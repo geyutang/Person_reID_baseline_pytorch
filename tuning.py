@@ -25,9 +25,9 @@ epochs = 60
 # lr = 0.02
 optimizer='SGD'
 
-loss = 'sphere'
-margin = 4
-scale = 1
+#loss = 'sphere'
+#margin = 4
+#scale = 1
 #loss = 'cosface'
 #scale = 30
 #margin = 0.4
@@ -36,8 +36,13 @@ scale = 1
 #scale = 30
 #margin = 0.01
 
+loss = 'center'
+margin = 1
+scale = 1
+
+
 backbone='resnet'
-ids = '0'
+ids = '1'
 dataset='market'
 balanced_sample=True
 

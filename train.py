@@ -293,7 +293,7 @@ def main(ids, name, balanced_sample=False, backbone='resnet', loss='softmax',
                             norm_output = metric_fc(features)
                             train_loss = criterion(norm_output, labels)
                         if loss=='center':
-                            loss_xent = criterion_xent(outputs, labels)
+                            loss_xent = criterion(outputs, labels)
                             loss_cent = criterion_cent(features, labels)
                             loss_cent *= weight_cent
                             train_loss = loss_xent + loss_cent
@@ -465,7 +465,7 @@ def main(ids, name, balanced_sample=False, backbone='resnet', loss='softmax',
     if loss!='center':
         criterion=nn.CrossEntropyLoss()
     if loss == 'center':
-        criterion_xent = nn.CrossEntropyLoss()
+        criterion = nn.CrossEntropyLoss()
         criterion_cent = CenterLoss(num_classes=len(class_names), feat_dim=embedding, use_gpu=use_gpu)
 
     #################################################################
@@ -574,15 +574,16 @@ def main(ids, name, balanced_sample=False, backbone='resnet', loss='softmax',
     
     # model to gpu
     model = model.cuda()
-    metric_fc = metric_fc.cuda()
+    if loss == 'sphere' or loss=='cosface' or loss=='arcface':
+        metric_fc = metric_fc.cuda()
     if fp16:
         model = network_to_half(model)
         optimizer_ft = FP16_Optimizer(optimizer_ft, static_loss_scale = 128.0)
     
     
     
-    model = train_model(model, metric_fc, criterion, optimizer_ft, exp_lr_scheduler,
-                           num_epochs, optimizer_centloss)
+    model = train_model(model, metric_fc, criterion, optimizer_ft, 
+            optimizer_centloss, exp_lr_scheduler,num_epochs)
 
 if __name__ == '__main__':
     main()
