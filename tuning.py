@@ -29,10 +29,10 @@ optimizer='SGD'
 #margin = 4
 #scale = 1
 loss = 'cosface'
-#scale = 30
-#margin = 0.4
+scale = 30
+margin = 0.4
 
-#loss = 'arcface'
+# loss = 'arcface'
 #scale = 30
 #margin = 0.01
 
@@ -41,7 +41,9 @@ loss = 'cosface'
 # scale = 1
 
 
-backbone='resnet'
+# backbone='resnet'
+# backbone='resnetmid'
+backbone='dense'
 ids = '3'
 dataset='market'
 balanced_sample=True
@@ -75,13 +77,13 @@ lr = 1e-2
 epochs = 60
 for i,  wd in enumerate(weight_decays):
     name = dataset+'_'+backbone+'_'+optimizer+loss+'_lr'+str(lr)+'_weight_decay'+str(wd)+'_epochs'+str(epochs)
-    #train.main(ids = ids, name=name, balanced_sample=balanced_sample,
-    #    backbone=backbone, loss=loss, weight_decay=wd,
-    #    dataset=dataset, lr=lr, epochs=epochs,
-    #    margin=margin, scale=scale)
+    train.main(ids = ids, name=name, balanced_sample=balanced_sample,
+        backbone=backbone, loss=loss, weight_decay=wd,
+        dataset=dataset, lr=lr, epochs=epochs,
+        margin=margin, scale=scale)
     # #train.main(id=ids, name='resnet_adam')
     # 
-    # test.main(ids=ids, name=name,  which_epoch='last', backbond=backbone)
+    test.main(ids=ids, name=name,  which_epoch='last', backbond=backbone)
     # # evaluate_gpu.main(name=name)
     # f_name = name + test_epoch
     # result[f_name] = evaluate_gpu.main(name=name)

@@ -290,7 +290,7 @@ def main(ids, name, balanced_sample=False, backbone='resnet', loss='softmax',
                         if loss == 'softmax':
                             train_loss = criterion(outputs, labels)
                         if loss=='arcface' or loss=='cosface' or loss=='sphere':
-                            norm_output = metric_fc(features)
+                            norm_output = metric_fc(features, labels)
                             train_loss = criterion(norm_output, labels)
                         if loss=='center':
                             loss_xent = criterion(outputs, labels)
@@ -491,15 +491,15 @@ def main(ids, name, balanced_sample=False, backbone='resnet', loss='softmax',
                      # {'params': metric_fc.parameters(), 'lr': opt.lr}
                  ],betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
     
-    if loss=='arcface' or loss=='arcface'or loss=='arcface':
-        ignored_params = list(map(id, model.model.fc.parameters() ))+list(map(id, model.addblock.parameters() ))
+    if loss=='arcface' or loss=='cosface'or loss=='sphere':
+        ignored_params = list(map(id, model.model.fc.parameters() ))+list(map(id, model.classifier.parameters() ))
         base_params = filter(lambda p: id(p) not in ignored_params, model.parameters())
         if optimizer=='SGD':
             optimizer_ft = optim.SGD([
                      {'params': base_params, 'lr': weight_lr*opt.lr},
                      {'params': model.model.fc.parameters(), 'lr': opt.lr},
                      # {'params': model.classifier.parameters(), 'lr': opt.lr}
-                     {'params': model.addblock.parameters(), 'lr': opt.lr},
+                     # {'params': model.addblock.parameters(), 'lr': opt.lr},
                      {'params': metric_fc.parameters(), 'lr': opt.lr}
                  ], weight_decay=5e-4, momentum=0.9, nesterov=True)
         if optimizer=='ADAM':
@@ -507,7 +507,7 @@ def main(ids, name, balanced_sample=False, backbone='resnet', loss='softmax',
                      {'params': base_params, 'lr': weight_lr*opt.lr},
                      {'params': model.model.fc.parameters(), 'lr': opt.lr},
                      # {'params': model.classifier.parameters(), 'lr': opt.lr}
-                     {'params': model.addblock.parameters(), 'lr': opt.lr},
+                     # {'params': model.addblock.parameters(), 'lr': opt.lr},
                      {'params': metric_fc.parameters(), 'lr': opt.lr}
                  ],betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
 
