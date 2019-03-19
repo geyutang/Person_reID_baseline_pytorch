@@ -83,7 +83,7 @@ for i,  wd in enumerate(weight_decays):
         margin=margin, scale=scale)
     # #train.main(id=ids, name='resnet_adam')
     # 
-    test.main(ids=ids, name=name,  which_epoch='last', backbond=backbone)
+    test.main(ids=ids, name=name,  which_epoch='last', backbone=backbone)
     # # evaluate_gpu.main(name=name)
     # f_name = name + test_epoch
     # result[f_name] = evaluate_gpu.main(name=name)

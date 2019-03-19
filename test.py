@@ -16,7 +16,7 @@ import time
 import os
 import scipy.io
 import yaml
-from model import ft_net, ft_net_dense, PCB, PCB_test
+from model import ft_net, ft_net_dense, ft_net_middle, PCB, PCB_test
 
 # #fp16
 # try:
@@ -26,7 +26,7 @@ from model import ft_net, ft_net_dense, PCB, PCB_test
 # ######################################################################
 # Options
 # --------
-def main(ids, name, which_epoch, backbond='resnet'):
+def main(ids, name, which_epoch, backbone='resnet'):
     parser = argparse.ArgumentParser(description='Training')
     parser.add_argument('--gpu_ids',default='0', type=str,help='gpu_ids: e.g. 0  0,1,2  0,2')
     parser.add_argument('--which_epoch',default='last', type=str, help='0,1,2,3...or last')
@@ -133,7 +133,7 @@ def main(ids, name, which_epoch, backbond='resnet'):
         img_flip = img.index_select(3,inv_idx)
         return img_flip
     
-    def extract_feature(model,dataloaders):
+    def extract_feature(model, dataloaders):
         features = torch.FloatTensor()
         count = 0
         for data in dataloaders:
@@ -141,17 +141,22 @@ def main(ids, name, which_epoch, backbond='resnet'):
             n, c, h, w = img.size()
             count += n
             print(count)
-            if opt.use_dense:
-                ff = torch.FloatTensor(n,1024).zero_()
-            elif backbond:
-                ff = torch.FloatTensor(n,2048).zero_()
-            else:
-                # ff = torch.FloatTensor(n,2048).zero_()
-                ##########################################
-                # change bonenet or embedding
+            # if opt.use_dense:
+            #     ff = torch.FloatTensor(n,1024).zero_()
+            # elif backbond:
+            #     ff = torch.FloatTensor(n,2048).zero_()
+            # else:
+            #     # ff = torch.FloatTensor(n,2048).zero_()
+            #     ##########################################
+            #     # change bonenet or embedding
                 
-                ff = torch.FloatTensor(n, 512).zero_()
-
+            #     ff = torch.FloatTensor(n, 512).zero_()
+            if backbone == 'resnet':
+                ff = torch.FloatTensor(n,2048).zero_()
+            if backbone == 'resnetmid':
+                ff = torch.FloatTensor(n,3072).zero_()
+            if backbone == 'dense':
+                ff = torch.FloatTensor(n,1024).zero_()
             if opt.PCB:
                 ff = torch.FloatTensor(n,2048,6).zero_() # we have six parts
             for i in range(2):
@@ -208,11 +213,11 @@ def main(ids, name, which_epoch, backbond='resnet'):
     ######################################################################
     # Load Collected data Trained model
     print('-------test-----------')
-    if backbond=='resnet':
+    if backbone =='resnet':
         model_structure = ft_net(751)
-    if backbond=='dense':
+    if backbone =='dense':
         model_structure = ft_net_dense(751)
-    if backbond=='resnetmid':
+    if backbone =='resnetmid':
         model_structure = ft_net_middle(751)
     if opt.PCB:
         model_structure = PCB(751)
