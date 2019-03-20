@@ -28,13 +28,13 @@ optimizer='SGD'
 #loss = 'sphere'
 #margin = 4
 #scale = 1
-loss = 'cosface'
-scale = 30
-margin = 0.4
+# loss = 'cosface'
+# scale = 30
+# margin = 0.4
 
-# loss = 'arcface'
-#scale = 30
-#margin = 0.01
+loss = 'arcface'
+scale = 30
+margin = 0.01
 
 # loss = 'center'
 # margin = 1
@@ -70,25 +70,40 @@ balanced_sample=True
     
 ##############################################################]
 # iteration weight_decay
-weight_decays = [5e-1, 1e-1, 5e-2, 1e-2, 5e-3, 1e-3, 5e-4, 1e-4, 5e-5, 1e-5, 5e-6, 1e-6]
+# weight_decays = [5e-1, 1e-1, 5e-2, 1e-2, 5e-3, 1e-3, 5e-4, 1e-4, 5e-5, 1e-5, 5e-6, 1e-6]
+
+# lr = 1e-2
+# weight_decays=[5e-4]
+# epochs = 60
+# for i,  wd in enumerate(weight_decays):
+#     name = dataset+'_'+backbone+'_'+optimizer+loss+'_lr'+str(lr)+'_weight_decay'+str(wd)+'_epochs'+str(epochs)
+#     train.main(ids = ids, name=name, balanced_sample=balanced_sample,
+#         backbone=backbone, loss=loss, weight_decay=wd,
+#         dataset=dataset, lr=lr, epochs=epochs,
+#         margin=margin, scale=scale)
+#     # #train.main(id=ids, name='resnet_adam')
+#     # 
+#     test.main(ids=ids, name=name,  which_epoch='last', backbone=backbone)
+#     # # evaluate_gpu.main(name=name)
+#     # f_name = name + test_epoch
+#     # result[f_name] = evaluate_gpu.main(name=name)
+#     result[name] = evaluate_gpu.main(name=name)
 
 lr = 1e-2
-# weight_decays=[5e-4]
+weight_decays=[5e-4]
 epochs = 60
-for i,  wd in enumerate(weight_decays):
-    name = dataset+'_'+backbone+'_'+optimizer+loss+'_lr'+str(lr)+'_weight_decay'+str(wd)+'_epochs'+str(epochs)
+weight_lrs = [10, 5, 1 , 0.5 , 0.01]
+for i, wl in enumerate(weight_lrs):
+    print('{}: th weight_lr: {}'.format(i, wl))
+    name = dataset+'_'+backbone+'_'+optimizer+loss+'_lr'+str(lr)+ \
+        '_weight_decay'+str(weight_decays[0])+'_weight_lr'+str(wl)+ \
+        '_epochs'+str(epochs)
+
     train.main(ids = ids, name=name, balanced_sample=balanced_sample,
-        backbone=backbone, loss=loss, weight_decay=wd,
-        dataset=dataset, lr=lr, epochs=epochs,
+        backbone=backbone, loss=loss, weight_decay=weight_decays[0],
+        dataset=dataset, lr=lr, weight_lr=wl, epochs=epochs,
         margin=margin, scale=scale)
-    # #train.main(id=ids, name='resnet_adam')
-    # 
     test.main(ids=ids, name=name,  which_epoch='last', backbone=backbone)
-    # # evaluate_gpu.main(name=name)
-    # f_name = name + test_epoch
-    # result[f_name] = evaluate_gpu.main(name=name)
     result[name] = evaluate_gpu.main(name=name)
-
-
 with open('result.yml', 'w') as outfile:
     yaml.dump(result, outfile, default_flow_style=False)

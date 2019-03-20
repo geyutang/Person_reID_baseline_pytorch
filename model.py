@@ -121,11 +121,11 @@ class ft_net(nn.Module):
         x = self.model.layer4(x)
         x = self.model.avgpool(x)
         x = x.view(x.size(0), x.size(1))
-        x = self.classifier(x)
-        return x
+        x ,f = self.classifier(x)
+        return x, f
 
 class resnet_metric(nn.Module):
-
+  
     def __init__(self, embedding, droprate=0.5, stride=1):
         super(resnet_metric, self).__init__()
         model_ft = models.resnet50(pretrained=True)
@@ -166,8 +166,8 @@ class ft_net_dense(nn.Module):
     def forward(self, x):
         x = self.model.features(x)
         x = x.view(x.size(0), x.size(1))
-        x = self.classifier(x)
-        return x
+        x, f = self.classifier(x)
+        return x, f
 
 class dense_metric(nn.Module):
 
@@ -217,8 +217,8 @@ class ft_net_middle(nn.Module):
         x1 = self.model.avgpool(x)
         x = torch.cat((x0,x1),1)
         x = x.view(x.size(0), x.size(1))
-        x = self.classifier(x)
-        return x
+        x, f = self.classifier(x)
+        return x, f
 
 
 class resnetmiddle_metric(nn.Module):
